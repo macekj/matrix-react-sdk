@@ -43,6 +43,7 @@ import MatrixClientContext from "../../../contexts/MatrixClientContext";
 import RateLimitedFunc from '../../../ratelimitedfunc';
 import {Action} from "../../../dispatcher/actions";
 import CountlyAnalytics from "../../../CountlyAnalytics";
+import {MatrixClientPeg} from "../../../MatrixClientPeg";
 import EMOJI_REGEX from 'emojibase-regex'
 
 function addReplyToMessageContent(content, repliedToEvent, permalinkCreator) {
@@ -233,6 +234,35 @@ export default class SendMessageComposer extends React.Component {
         return false;
     }
 
+    _sendQuickReaction() {
+        const timeline = this.props.room.getLiveTimeline();
+        const events = timeline.getEvents();
+        const reaction = this.model.parts[1].text;
+        for (let i = events.length - 1; i >= 0; i--) {
+            if (events[i].getType() === "m.room.message") {
+                const lastMessage = events[i];
+                const userId = MatrixClientPeg.get().getUserId();
+                const messageReactions = this.props.room.getUnfilteredTimelineSet().getRelationsForEvent(lastMessage.getId(), "m.annotation", "m.reaction");
+                const myReactionEvents = messageReactions.getAnnotationsBySender()[userId] || [];
+                const myReactionKeys = [...myReactionEvents].filter(event => !event.isRedacted()).map(event => event.getRelation().key);
+                const myReaction = myReactionKeys.includes(reaction);
+
+                // if we have already sent this reaction, don't redact but don't re-send
+                if (!myReaction) {
+                    MatrixClientPeg.get().sendEvent(lastMessage.getRoomId(), "m.reaction", {
+                        "m.relates_to": {
+                            "rel_type": "m.annotation",
+                            "event_id": lastMessage.getId(),
+                            "key": reaction,
+                        },
+                    });
+                    dis.dispatch({action: "message_sent"});
+                }                
+                break;
+            }
+        }   
+    }
+
     _getSlashCommand() {
         const commandText = this.model.parts.reduce((text, part) => {
             // use mxid to textify user pills in a command
@@ -322,6 +352,7 @@ export default class SendMessageComposer extends React.Component {
 
         if (this._isQuickReaction()) {
             shouldSend = false;
+            this._sendQuickReaction();
         }
 
         const replyToEvent = this.props.replyToEvent;
