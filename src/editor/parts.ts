@@ -190,9 +190,9 @@ abstract class PlainBasePart extends BasePart {
                 return true;
             }
             // only split if the previous character is a space
-            // or if it is a + and this is a : 
+            // or if it is a + and this is a :
             return this._text[offset - 1] !== " " &&
-                this._text[offset - 1] !== "+" && chr !== ":";
+                (this._text[offset - 1] !== "+" || chr !== ":");
         }
         return true;
     }
