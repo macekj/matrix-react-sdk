@@ -90,6 +90,25 @@ export function createMessageContent(model, permalinkCreator, replyToEvent) {
     return content;
 }
 
+// exported for tests
+export function isQuickReaction(model) {
+    const parts = model.parts;
+    if (parts.length == 0) return false;
+    let text = parts[0].text;
+    text += parts[1] ? parts[1].text : "";
+    // shortcut takes the form "+:emoji:" or "+ :emoji:""
+    // can be in 1 or 2 parts
+    if (parts.length <= 2) {
+        const hasShortcut = text.startsWith("+") || text.startsWith("+ ");
+        const emojiMatch = text.match(EMOJI_REGEX);
+        if (hasShortcut && emojiMatch && emojiMatch.length == 1) {
+            return emojiMatch[0] === text.substring(1) ||
+                emojiMatch[0] === text.substring(2);
+        }
+    }
+    return false;
+}
+
 export default class SendMessageComposer extends React.Component {
     static propTypes = {
         room: PropTypes.object.isRequired,
@@ -218,22 +237,6 @@ export default class SendMessageComposer extends React.Component {
         return false;
     }
 
-    _isQuickReaction() {
-        const parts = this.model.parts;
-        const firstPart = parts[0];
-        const secondPart = parts[1];
-        if (parts.length == 2) {
-            // shortcut takes the form "+:emoji:" or "+ :emoji:""
-            const hasShortcut = firstPart.text === "+" || firstPart.text === "+ ";
-            const emojiMatch = secondPart.text.match(EMOJI_REGEX);
-            if (emojiMatch && emojiMatch.length == 1) {
-                const isEmoji = emojiMatch[0] === secondPart.text;
-                return isEmoji && hasShortcut;
-            }
-        }
-        return false;
-    }
-
     _sendQuickReaction() {
         const timeline = this.props.room.getLiveTimeline();
         const events = timeline.getEvents();
@@ -356,7 +359,7 @@ export default class SendMessageComposer extends React.Component {
             }
         }
 
-        if (this._isQuickReaction()) {
+        if (isQuickReaction(this.model)) {
             shouldSend = false;
             this._sendQuickReaction();
         }
