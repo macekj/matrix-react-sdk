@@ -165,8 +165,6 @@ export default class BasicMessageEditor extends React.Component<IProps, IState> 
             if (data) {
                 const {partCreator} = model;
                 const hasPrecedingSpace = emoticonMatch[0][0] === " ";
-                console.log("Printing emoticonMatch");
-                console.log(emoticonMatch);
                 // we need the range to only comprise of the emoticon
                 // because we'll replace the whole range with an emoji,
                 // so move the start forward to the start of the emoticon.
