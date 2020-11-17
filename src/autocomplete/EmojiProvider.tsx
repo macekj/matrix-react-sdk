@@ -91,13 +91,9 @@ export default class EmojiProvider extends AutocompleteProvider {
 
         let completions = [];
         const {command, range} = this.getCurrentCommand(query, selection);
-        console.log("command " + command);
-        console.log("command regex: " + this.commandRegex)
         if (command) {
             const matchedString = command[0];
             completions = this.matcher.match(matchedString);
-
-            console.log("matched string" + matchedString);
 
             // Do second match with shouldMatchWordsOnly in order to match against 'name'
             completions = completions.concat(this.nameMatcher.match(matchedString));

@@ -43,6 +43,7 @@ import MatrixClientContext from "../../../contexts/MatrixClientContext";
 import RateLimitedFunc from '../../../ratelimitedfunc';
 import {Action} from "../../../dispatcher/actions";
 import CountlyAnalytics from "../../../CountlyAnalytics";
+import EMOJI_REGEX from 'emojibase-regex'
 
 function addReplyToMessageContent(content, repliedToEvent, permalinkCreator) {
     const replyContent = ReplyThread.makeReplyMixIn(repliedToEvent);
@@ -216,6 +217,22 @@ export default class SendMessageComposer extends React.Component {
         return false;
     }
 
+    _isQuickReaction() {
+        const parts = this.model.parts;
+        const firstPart = parts[0];
+        const secondPart = parts[1];
+        if (parts.length == 2) {
+            // shortcut takes the form "+:emoji:" or "+ :emoji:""
+            const hasShortcut = firstPart.text === "+" || firstPart.text === "+ ";
+            const emojiMatch = secondPart.text.match(EMOJI_REGEX);
+            if (emojiMatch && emojiMatch.length == 1) {
+                const isEmoji = emojiMatch[0] === secondPart.text;
+                return isEmoji && hasShortcut;
+            }
+        }
+        return false;
+    }
+
     _getSlashCommand() {
         const commandText = this.model.parts.reduce((text, part) => {
             // use mxid to textify user pills in a command
@@ -301,6 +318,10 @@ export default class SendMessageComposer extends React.Component {
                 // if !sendAnyway bail to let the user edit the composer and try again
                 if (!sendAnyway) return;
             }
+        }
+
+        if (this._isQuickReaction()) {
+            shouldSend = false;
         }
 
         const replyToEvent = this.props.replyToEvent;
