@@ -240,18 +240,21 @@ export default class SendMessageComposer extends React.Component {
         const reaction = this.model.parts[1].text;
         for (let i = events.length - 1; i >= 0; i--) {
             if (events[i].getType() === "m.room.message") {
+                let shouldReact = true;
                 const lastMessage = events[i];
                 const userId = MatrixClientPeg.get().getUserId();
                 const messageReactions = this.props.room.getUnfilteredTimelineSet()
                     .getRelationsForEvent(lastMessage.getId(), "m.annotation", "m.reaction");
-                const myReactionEvents = messageReactions.getAnnotationsBySender()[userId] || [];
-                const myReactionKeys = [...myReactionEvents]
-                    .filter(event => !event.isRedacted())
-                    .map(event => event.getRelation().key);
-                const myReaction = myReactionKeys.includes(reaction);
 
                 // if we have already sent this reaction, don't redact but don't re-send
-                if (!myReaction) {
+                if (messageReactions) {
+                    const myReactionEvents = messageReactions.getAnnotationsBySender()[userId] || [];
+                    const myReactionKeys = [...myReactionEvents]
+                        .filter(event => !event.isRedacted())
+                        .map(event => event.getRelation().key);
+                        shouldReact = !myReactionKeys.includes(reaction);
+                }
+                if (shouldReact) {
                     MatrixClientPeg.get().sendEvent(lastMessage.getRoomId(), "m.reaction", {
                         "m.relates_to": {
                             "rel_type": "m.annotation",
