@@ -44,7 +44,7 @@ import RateLimitedFunc from '../../../ratelimitedfunc';
 import {Action} from "../../../dispatcher/actions";
 import CountlyAnalytics from "../../../CountlyAnalytics";
 import {MatrixClientPeg} from "../../../MatrixClientPeg";
-import EMOJI_REGEX from 'emojibase-regex'
+import EMOJI_REGEX from 'emojibase-regex';
 
 function addReplyToMessageContent(content, repliedToEvent, permalinkCreator) {
     const replyContent = ReplyThread.makeReplyMixIn(repliedToEvent);
@@ -242,9 +242,12 @@ export default class SendMessageComposer extends React.Component {
             if (events[i].getType() === "m.room.message") {
                 const lastMessage = events[i];
                 const userId = MatrixClientPeg.get().getUserId();
-                const messageReactions = this.props.room.getUnfilteredTimelineSet().getRelationsForEvent(lastMessage.getId(), "m.annotation", "m.reaction");
+                const messageReactions = this.props.room.getUnfilteredTimelineSet()
+                    .getRelationsForEvent(lastMessage.getId(), "m.annotation", "m.reaction");
                 const myReactionEvents = messageReactions.getAnnotationsBySender()[userId] || [];
-                const myReactionKeys = [...myReactionEvents].filter(event => !event.isRedacted()).map(event => event.getRelation().key);
+                const myReactionKeys = [...myReactionEvents]
+                    .filter(event => !event.isRedacted())
+                    .map(event => event.getRelation().key);
                 const myReaction = myReactionKeys.includes(reaction);
 
                 // if we have already sent this reaction, don't redact but don't re-send
@@ -257,10 +260,10 @@ export default class SendMessageComposer extends React.Component {
                         },
                     });
                     dis.dispatch({action: "message_sent"});
-                }                
+                }
                 break;
             }
-        }   
+        }
     }
 
     _getSlashCommand() {
