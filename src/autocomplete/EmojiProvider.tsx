@@ -34,7 +34,7 @@ const LIMIT = 20;
 
 // Match for ascii-style ";-)" emoticons or ":wink:" shortcodes provided by emojibase
 // anchored to only match from the start of parts otherwise it'll show emoji suggestions whilst typing matrix IDs
-const EMOJI_REGEX = new RegExp('(' + EMOTICON_REGEX.source + '|(?:^|\\s):[+-\\w]*:?)$', 'g');
+const EMOJI_REGEX = new RegExp('(' + EMOTICON_REGEX.source + '|(?:^|\\s|(?<=^\\+)):[+-\\w]*:?)$', 'g');
 
 interface IEmojiShort {
     emoji: IEmoji;
@@ -91,9 +91,13 @@ export default class EmojiProvider extends AutocompleteProvider {
 
         let completions = [];
         const {command, range} = this.getCurrentCommand(query, selection);
+        console.log("command " + command);
+        console.log("command regex: " + this.commandRegex)
         if (command) {
             const matchedString = command[0];
             completions = this.matcher.match(matchedString);
+
+            console.log("matched string" + matchedString);
 
             // Do second match with shouldMatchWordsOnly in order to match against 'name'
             completions = completions.concat(this.nameMatcher.match(matchedString));
